@@ -329,7 +329,7 @@ size_t bwt_map_exact_seed_bs(char *seq, size_t seq_len,
     if (actual_mappings > bwt_optarg->filter_seed_mappings) {
       //discard_seed = 1;
       //break;
-      printf("**************** EXCEED mappings: %lu\n", actual_mappings);
+      //printf("**************** EXCEED mappings: %lu\n", actual_mappings);
       k_aux = result.k;
       l_aux = result.k + 10;
 
@@ -358,9 +358,9 @@ size_t bwt_map_exact_seed_bs(char *seq, size_t seq_len,
 	//start_mapping = index->karyotype.start[idx-1] + (key - index->karyotype.offset[idx-1]);
 	
 	start_mapping = index->karyotype.start[idx-1] + (key - index->karyotype.offset[idx-1]);
-	printf("\t\tstrand:%c\tchromosome:%s\tstart:%u\tend:%u\n",plusminus[type],
-	       index->karyotype.chromosome + (idx-1) * IDMAX,
-	       start_mapping, start_mapping + len);
+	//printf("\t\tstrand:%c\tchromosome:%s\tstart:%u\tend:%u\n",plusminus[type],
+	//     index->karyotype.chromosome + (idx-1) * IDMAX,
+	//     start_mapping, start_mapping + len);
 	// save all into one alignment structure and insert to the list
 
 	region = region_bwt_new(idx, !type, start_mapping, start_mapping + len, aux_seq_start, aux_seq_end, seq_len, id);
@@ -733,7 +733,7 @@ size_t __bwt_map_inexact_read_bs(fastq_read_t *read,
 
      if (filter_exceeded) {
        //printf("Limit Exceeded %d\n", bwt_optarg->filter_read_mappings);
-       array_list_clear(tmp_mapping_list, alignment_free);
+       array_list_clear(tmp_mapping_list, (void *)alignment_free);
        if (!mapping_list->size) {
 	 array_list_set_flag(2, mapping_list);       
        }
@@ -745,7 +745,7 @@ size_t __bwt_map_inexact_read_bs(fastq_read_t *read,
      //
      //Search for equal BWT mappings and set the mappings that will be delete
      int n_mappings = array_list_size(tmp_mapping_list);
-     printf("**Finish BWT with n_mappings = %i\n", n_mappings);
+     //printf("**Finish BWT with n_mappings = %i\n", n_mappings);
      alignment_t *alig_1, *alig_2;
      unsigned int *delete_mark = (unsigned int *)calloc(n_mappings, sizeof(unsigned int));
      const int max_distance = 10;
@@ -777,9 +777,9 @@ size_t __bwt_map_inexact_read_bs(fastq_read_t *read,
      
      if (array_list_get_flag(mapping_list) == 1 &&
 	 n_mappings) {
-       printf("\tNUM ITEMS TO FREE %i\n", array_list_size(mapping_list));
-       array_list_clear(mapping_list, bwt_anchor_free);
-       printf("\tFREE END\n");
+       //printf("\tNUM ITEMS TO FREE %i\n", array_list_size(mapping_list));
+       array_list_clear(mapping_list, (void *)bwt_anchor_free);
+       //printf("\tFREE END\n");
      }
 
      //Delete all set mappings
@@ -827,7 +827,7 @@ size_t __bwt_map_inexact_read_bs(fastq_read_t *read,
 	 __bwt_generate_anchor_list(last_ki1, last_li1, forw1_nt, bwt_optarg, 
 				    index, new_type,  mapping_list, FORWARD_ANCHOR, 0);
 
-	 printf("**BWT Anchors items = %i\n", mapping_list->size);
+	 //printf("**BWT Anchors items = %i\n", mapping_list->size);
 
 	 //type = 0;//(-)
 	 //printf("BACKWARD (-)\n");
@@ -1044,8 +1044,8 @@ size_t bwt_generate_cals_bs(char *seq, char *seq2, size_t seed_size, bwt_optarg_
     size_t offset_inc = ceil(1.0f * len / (num_seeds + 1));
     if (offset_inc <= 0) offset_inc = 1;
 
-    printf("+++++++++++ read1 %s ++++++++++++++\n", seq);
-    printf("+++++++++++ read2 %s ++++++++++++++\n", seq2);
+    //printf("+++++++++++ read1 %s ++++++++++++++\n", seq);
+    //printf("+++++++++++ read2 %s ++++++++++++++\n", seq2);
 
     start = 0;
     for (size_t i = 0; i < n_seeds; i++) {
@@ -1057,13 +1057,13 @@ size_t bwt_generate_cals_bs(char *seq, char *seq2, size_t seed_size, bwt_optarg_
       
       num_mappings = bwt_map_exact_seed_bs(code_seq, len, start, end - 1,
 					   bwt_optarg, index,  mapping_list, seed_id++, 0);
-      printf("----------- seed %lu (%lu - %lu) -> %lu mappings\n", seed_id, start, end, num_mappings);
+      //printf("----------- seed %lu (%lu - %lu) -> %lu mappings\n", seed_id, start, end, num_mappings);
       //transform_regions(mapping_list);
       insert_seeds_and_merge(mapping_list, cals_list,  len);
       
       num_mappings = bwt_map_exact_seed_bs(code_seq2, len2, start, end - 1,
 					   bwt_optarg, index2, mapping_list, seed_id++, 1);
-      printf("----------- seed %lu (%lu - %lu) -> %lu mappings\n", seed_id, start, end, num_mappings);
+      //printf("----------- seed %lu (%lu - %lu) -> %lu mappings\n", seed_id, start, end, num_mappings);
       insert_seeds_and_merge(mapping_list, cals_list,  len);
       
       start += offset_inc;
@@ -1217,7 +1217,7 @@ size_t bwt_generate_cals_bs(char *seq, char *seq2, size_t seed_size, bwt_optarg_
 
   for (unsigned int i = 0; i < nstrands; i++) {
     for (unsigned int j = 0; j < nchromosomes; j++) {
-      linked_list_free(cals_list[i][j], short_cal_free);
+      linked_list_free(cals_list[i][j], (void *)short_cal_free);
     }
     free(cals_list[i]);
   }

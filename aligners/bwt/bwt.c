@@ -190,7 +190,7 @@ void cal_free(cal_t *cal) {
 }
 
 void cal_print(cal_t *cal) {
-  printf(" CAL (%c)[%i:%lu-%lu]:\n", cal->strand==0?'+':'-', 
+  printf(" CAL (%c)[%lu:%lu-%lu]:\n", cal->strand==0?'+':'-', 
 	 cal->chromosome_id, cal->start, cal->end);
   printf("\t SEEDS LIST: ");
   if (cal->sr_list == NULL || cal->sr_list->size == 0) {
@@ -199,7 +199,7 @@ void cal_print(cal_t *cal) {
     for (linked_list_item_t *item = cal->sr_list->first; 
 	 item != NULL; item = item->next) {
       seed_region_t *seed = item->item;
-      printf(" [%lu|%i - %i|%lu] ", seed->genome_start, seed->read_start, 
+      printf(" [%lu|%lu - %lu|%lu] ", seed->genome_start, seed->read_start, 
 	     seed->read_end, seed->genome_end);
     }
     printf("\n");
@@ -210,7 +210,7 @@ void cal_print(cal_t *cal) {
     for (linked_list_item_t *item = cal->sr_duplicate_list->first; 
 	 item != NULL; item = item->next) {
       seed_region_t *seed = item->item;
-      printf(" [%lu|%i - %i|%lu] ", seed->genome_start, seed->read_start, 
+      printf(" [%lu|%lu - %lu|%lu] ", seed->genome_start, seed->read_start, 
 	     seed->read_end, seed->genome_end);
     }
     printf("\n");
@@ -1349,7 +1349,7 @@ size_t bwt_map_exact_seed_by_region(char *seq, size_t seq_len,
 	start_mapping = index->karyotype.start[idx-1] + (key - index->karyotype.offset[idx-1]) + 1;
 	if (start_mapping < start_target || start_mapping > end_target) { continue; }
 	// save all into one alignment structure and insert to the list
-	printf(" \t::: %i:%lu :::\n", idx, start_mapping);
+	printf(" \t::: %lu:%lu :::\n", idx, start_mapping);
 	region = region_bwt_new(idx, !type, start_mapping, start_mapping + len, aux_seq_start, aux_seq_end, seq_len, id);
 	
 	if (!array_list_insert((void*) region, mapping_list)){
@@ -1726,7 +1726,7 @@ size_t bwt_map_inexact_seed_by_region(char *seq, size_t seq_len,
 	  //	 aux_seq_start, aux_seq_end, start_mapping + end);
 	  if (start_mapping < start_pos || start_mapping > end_pos ) { continue; }
 	  // save all into one alignment structure and insert to the list
-	printf("%i:%lu-%lu , %i-%i\n", idx, start_mapping, start_mapping + len, aux_seq_start, aux_seq_end);	  
+	printf("%lu:%lu-%lu , %i-%i\n", idx, start_mapping, start_mapping + len, aux_seq_start, aux_seq_end);	  
 	  region = region_bwt_new(idx, !type, start_mapping, start_mapping + end, aux_seq_start, aux_seq_end, seq_len, seed_id);
 	    
 	  if(!array_list_insert((void*) region, tmp_mapping_list)){
@@ -2171,7 +2171,7 @@ size_t __bwt_map_inexact_read(fastq_read_t *read,
 	  }//end for 
 	  
 	  if (filter_exceeded) {
-	    array_list_clear(tmp_mapping_list, alignment_free);
+	    array_list_clear(tmp_mapping_list, (void *)alignment_free);
 	    array_list_set_flag(2, mapping_list);
 	    break;
 	  }
@@ -2974,7 +2974,7 @@ size_t bwt_map_inexact_seeds_by_region(int start_position, int end_position,
   }
 
   //seed_size = ;
-  printf(" REGION INTERVAL (%i)[%i:%lu-%lu]\n", strand_target, chromosome_target, start_target, end_target);
+  printf(" REGION INTERVAL (%i)[%i:%i-%i]\n", strand_target, chromosome_target, start_target, end_target);
   found_fusion = 0;
   // first 'pasada'
   offset = start_position;
@@ -3188,7 +3188,7 @@ size_t bwt_map_seeds_IA(int padding_left,
   printf("START REGIONS:\n");
   for (int i = 0; i < num_regions_start; i++) {
     region_t *region = array_list_get(i, mapping_list);
-    printf("\t Region (%i)[%i:%lu-%lu]\n", region->strand, region->chromosome_id, region->start, region->end);
+    printf("\t Region (%i)[%lu:%lu-%lu]\n", region->strand, region->chromosome_id, region->start, region->end);
   }
 
   //First Exact seed Start read and End
@@ -3197,7 +3197,7 @@ size_t bwt_map_seeds_IA(int padding_left,
   printf("START REGIONS:\n");
   for (int i = num_regions_start; i < num_regions_end; i++) {
     region_t *region = array_list_get(i, mapping_list);
-    printf("\t Region (%i)[%i:%lu-%lu]\n", region->strand, region->chromosome_id, region->start, region->end);
+    printf("\t Region (%i)[%lu:%lu-%lu]\n", region->strand, region->chromosome_id, region->start, region->end);
   }
 
   free(code_seq);
@@ -3450,7 +3450,7 @@ size_t bwt_generate_cals(char *seq, size_t seed_size, bwt_optarg_t *bwt_optarg,
 
   for (unsigned int i = 0; i < nstrands; i++) {
     for (unsigned int j = 0; j < nchromosomes; j++) {
-      linked_list_free(cals_list[i][j], short_cal_free);
+      linked_list_free(cals_list[i][j], (void *)short_cal_free);
     }
     free(cals_list[i]);
   }
@@ -3585,11 +3585,11 @@ size_t bwt_generate_cals_between_coords(int strand_target, int chromosome_target
       list_item_cal = linked_list_iterator_list_item_curr(&itr);
       while ((list_item_cal != NULL )) {
 	short_cal = (short_cal_t *)list_item_cal->item;
-	printf("Short CAL %i:%lu-%lu \n", short_cal->start, short_cal->end);
+	printf("Short CAL:%lu-%lu \n", short_cal->start, short_cal->end);
 	if (short_cal->end - short_cal->start + 1 >= min_cal_size) {
 	  linked_list_t *list_aux = linked_list_new(COLLECTION_MODE_ASYNCHRONIZED);
 	  while (s = (seed_region_t *)linked_list_remove_last(short_cal->sr_list)) {
-	    printf("\t Seed Region [%lu|%i-%i|%lu] %i\n", s->genome_start, 
+	    printf("\t Seed Region [%lu|%lu-%lu|%lu] %i\n", s->genome_start, 
 		   s->read_start, s->read_end, s->genome_end, s->id);
 	    //TODO: Change all parameters to seed_region_t
 	    append_seed_region_linked_list(list_aux,
@@ -3617,7 +3617,7 @@ size_t bwt_generate_cals_between_coords(int strand_target, int chromosome_target
 
   for (unsigned int i = 0; i < nstrands; i++) {
     for (unsigned int j = 0; j < nchromosomes; j++) {
-      linked_list_free(cals_list[i][j], short_cal_free);
+      linked_list_free(cals_list[i][j], (void *)short_cal_free);
     }
     free(cals_list[i]);
   }
@@ -4342,7 +4342,7 @@ size_t bwt_generate_cal_list_linked_list(array_list_t *mapping_list,
 
   for (unsigned int i = 0; i < nstrands; i++) {
     for (unsigned int j = 0; j < nchromosomes; j++) {
-      linked_list_free(cals_list[i][j], short_cal_free);
+      linked_list_free(cals_list[i][j], (void *)short_cal_free);
     }
     free(cals_list[i]);
   }
