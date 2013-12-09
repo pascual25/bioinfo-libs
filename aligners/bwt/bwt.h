@@ -32,6 +32,14 @@
 #define EXTRA_SEED_START 1
 #define EXTRA_SEED_END 2
 
+//------------------------------------------------------------------------------------
+
+#define BS_ALIGNMENTS       0
+#define BS_ANCHORS          1
+#define BS_EXCEEDED         2
+
+//------------------------------------------------------------------------------------
+
 #ifndef MAX
   #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -314,6 +322,12 @@ size_t bwt_map_inexact_read_bs(fastq_read_t *read,
 			       bwt_index_t *index, 
 			       array_list_t *mapping_list, 
 			       int type);
+
+size_t bwt_map_inexact_read_bs_un(fastq_read_t *read, 
+				  bwt_optarg_t *bwt_optarg, 
+				  bwt_index_t *index, 
+				  array_list_t *mapping_list, 
+				  int type);
 
 //-----------------------------------------------------------------------------
 // seed functions
