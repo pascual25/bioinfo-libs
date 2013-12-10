@@ -2,6 +2,8 @@
 
 //-----------------------------------------------------------------------------
 
+#define jump_error      5
+
 size_t bwt_map_inexact_read_bs_un(fastq_read_t *read, 
 				  bwt_optarg_t *bwt_optarg, 
 				  bwt_index_t *index, 
@@ -89,12 +91,14 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
      array_list_t *mapping_list = array_list_new(bwt_optarg->filter_read_mappings, 1.25f,
 						 COLLECTION_MODE_ASYNCHRONIZED);
      
-     size_t min_size = 24;
+     int min_size = 20;
      size_t first_loop = 0;
      ///////////////////////////////
-     while (end - start >= min_size) {
+     while ((int)end - (int)start >= min_size) {
      ///////////////////////////////
-       LOG_DEBUG_F("Iteracion %lu, (%lu _ %lu) from %s\n", first_loop, start, end, seq);
+       //printf("Start - end (%lu : %lu)\n", start, end);
+       //printf("gap %i (min gap %i)\n", (int)end - (int)start, min_size);
+       LOG_DEBUG_F("Iteracion %lu, (%lu : %lu) from %s\n", first_loop, start, end, seq);
        BWExactSearchVectorBackward(code_seq, start, end, 0, index->h_O.siz - 2,
 				   k1, l1, &index->h_C, &index->h_C1, &index->h_O,
 				   &last_k1, &last_l1, &back1_nt);
@@ -227,7 +231,7 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 	   seq_dup[len] = '\0';
 		 
 	 }else{
-	   printf("NUM MAPPINGS %lu -> POS %d -> ERROR %d -> (%lu):%s", num_mappings, pos, error, len, seq);
+	   //printf("NUM MAPPINGS %lu -> POS %d -> ERROR %d -> (%lu):%s", num_mappings, pos, error, len, seq);
 	   continue;
 	 }
 	 k_start = r->k;
@@ -274,7 +278,7 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 	 //printf("Limit Exceeded %d\n", bwt_optarg->filter_read_mappings);
 	 array_list_clear(tmp_mapping_list, (void *)alignment_free);
 	 if (!mapping_list->size) {
-	   array_list_set_flag(2, mapping_list);       
+	   array_list_set_flag(BS_EXCEEDED, mapping_list);
 	 }
 	 goto exit;
        }
@@ -336,35 +340,50 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
        }
        free(delete_mark);
 
-       // no alignments found
-       if (n_mappings == 0) {     
-	 if (array_list_get_flag(mapping_list) == 1) {
-	   array_list_t *forward_anchor_list, *backward_anchor_list;       
+       if (n_mappings == 0) { // no alignments found
+	 //printf("Not mapping, maybe anchors (flag %i [%lu])\n", array_list_get_flag(mapping_list_tmp), array_list_size(mapping_list_tmp));
+	 //printf("Size %lu\n", array_list_size(mapping_list_tmp));
+	 if (array_list_get_flag(mapping_list_tmp) == BS_ANCHORS) {
+	   //printf("Not mapping, anchors before [%lu]\n", array_list_size(mapping_list_tmp));
+	   array_list_t *forward_anchor_list, *backward_anchor_list;
 	   int new_type = !type; //1 == (+)
 
 	   //printf("BACKWARD (+)\n");
-	   __bwt_generate_anchor_list(last_k1, last_l1, back1_nt, bwt_optarg, 
-				      index, new_type, mapping_list, BACKWARD_ANCHOR, 0);
+	   //printf("fowr1 %i : back1 %i\n", forw1_nt, back1_nt);
+	   if (back1_nt > min_size) {
+	     __bwt_generate_anchor_list(last_k1, last_l1, back1_nt, bwt_optarg, 
+					index, new_type, mapping_list_tmp, BACKWARD_ANCHOR, 0);
+	   } else {
+	     back1_nt = 0;
+	   }
 	   //printf("FORWARD (+)\n");
-	   __bwt_generate_anchor_list(last_ki1, last_li1, forw1_nt, bwt_optarg, 
-				      index, new_type,  mapping_list, FORWARD_ANCHOR, 0);
+	   if (forw1_nt > min_size) {
+	     __bwt_generate_anchor_list(last_ki1, last_li1, forw1_nt, bwt_optarg, 
+					index, new_type,  mapping_list_tmp, FORWARD_ANCHOR, 0);
+	   } else {
+	     forw1_nt = 0;
+	   }
+	   //printf("Size %lu\n", array_list_size(mapping_list_tmp));
 
-	   // sumar/restar en función del tamaño de los anchors
-	   start++;
-	   end--;
+	   // jump
+	   start+= (jump_error + forw1_nt);
+	   end  -= (jump_error + back1_nt);
 	 } else {
 	   // there is no alignments nor anchors
-	   start+=2;
-	   end-=2;
+	   // skip some positions, and try again
+	   start+=jump_error;
+	   end-=jump_error;
 	 }
-       } else {
-	 // alignments found
+	 //printf("Size %lu\n", array_list_size(mapping_list_tmp));
+       } else { // alignments found
 
 	 // insert the new mappings in the output array
 	 n_mappings = array_list_size(mapping_list);
 	 if (first_loop == 0) {
+	   //printf("Mapping in the first loop [%lu]\n", array_list_size(mapping_list_tmp));
 	   // si la lista destino tiene anchors, se eliminan
 	   if (array_list_get_flag(mapping_list_tmp) == BS_ANCHORS) {
+	     //printf("Mappings, clear anchors\n");
 	     array_list_clear(mapping_list_tmp, (void *) bwt_anchor_free);
 	   }
 	   array_list_set_flag(BS_ALIGNMENTS, mapping_list_tmp);
@@ -373,6 +392,7 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 	     array_list_insert((void*) alig_1, mapping_list_tmp);
 	   }
 	 } else {
+	   //printf("Mappings not the first loop\n");
 	   array_list_set_flag(BS_ANCHORS, mapping_list_tmp);
 	   // convertir alignments en bwt_anchor_t
 	   for (int m = n_mappings - 1; m >= 0; m--) {
@@ -386,10 +406,14 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 	     alignment_free(alig_1);
 	   }
 	 }
+	 // found alignment
 	 start = end;
        }
+       //printf("\n");
 
        first_loop++;
+       array_list_clear(mapping_list, (void *) NULL);
+       array_list_clear(tmp_mapping_list, (void *) NULL);
        ////////////////////////////////
      }//end while
      ////////////////////////////////
@@ -405,10 +429,10 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 
      free(seq_dup);
      free(quality_clipping);
-     array_list_free(tmp_mapping_list, NULL);
-     array_list_free(mapping_list, NULL);
+     array_list_free(tmp_mapping_list, (void *)NULL);
+     array_list_free(mapping_list, (void *)NULL);
 
-     return array_list_size(mapping_list);
+     return array_list_size(mapping_list_tmp);
 }
 
 //-----------------------------------------------------------------------------
