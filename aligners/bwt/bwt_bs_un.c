@@ -90,6 +90,10 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
      
      array_list_t *mapping_list = array_list_new(bwt_optarg->filter_read_mappings, 1.25f,
 						 COLLECTION_MODE_ASYNCHRONIZED);
+     array_list_t *anchor_list = array_list_new(bwt_optarg->filter_read_mappings, 1.25f,
+						COLLECTION_MODE_ASYNCHRONIZED);
+     cal_t *cal;
+     bwt_anchor_t * anchor;
      
      int min_size = 20;
      size_t first_loop = 0;
@@ -350,16 +354,39 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
 
 	   //printf("BACKWARD (+)\n");
 	   //printf("fowr1 %i : back1 %i\n", forw1_nt, back1_nt);
+	   size_t num_elem;
 	   if (back1_nt > min_size) {
+	     LOG_DEBUG("1 INIT ANCHOR LIST");
 	     __bwt_generate_anchor_list(last_k1, last_l1, back1_nt, bwt_optarg, 
-					index, new_type, mapping_list_tmp, BACKWARD_ANCHOR, 0);
+					index, new_type, anchor_list, BACKWARD_ANCHOR, 0);
+	     // convert anchors in anchor_list, into cals in mapping_list_tmp
+	     LOG_DEBUG("1 END ANCHOR LIST");
+	     num_elem = array_list_size(anchor_list);
+	     for (int elem = num_elem - 1; elem >= 0; elem--) {
+	       anchor = array_list_remove_at(elem, anchor_list);
+	       cal = convert_bwt_anchor_to_CAL(anchor, end - back1_nt - 1, end - 1);
+	       array_list_insert(cal, mapping_list_tmp);
+	     }
+	     // necessary??
+	     array_list_clear(anchor_list, (void *) bwt_anchor_free);
 	   } else {
 	     back1_nt = 0;
 	   }
 	   //printf("FORWARD (+)\n");
 	   if (forw1_nt > min_size) {
+	     LOG_DEBUG("2 INIT ANCHOR LIST");
 	     __bwt_generate_anchor_list(last_ki1, last_li1, forw1_nt, bwt_optarg, 
 					index, new_type,  mapping_list_tmp, FORWARD_ANCHOR, 0);
+	     LOG_DEBUG("2 END ANCHOR LIST");
+	     // convert anchors in anchor_list, into cals in mapping_list_tmp
+	     num_elem = array_list_size(anchor_list);
+	     for (int elem = num_elem - 1; elem >= 0; elem--) {
+	       anchor = array_list_remove_at(elem, anchor_list);
+	       cal = convert_bwt_anchor_to_CAL(anchor, start, start + forw1_nt - 1);
+	       array_list_insert(cal, mapping_list_tmp);
+	     }
+	     // necessary??
+	     array_list_clear(anchor_list, (void *) bwt_anchor_free);
 	   } else {
 	     forw1_nt = 0;
 	   }
@@ -431,6 +458,7 @@ size_t bwt_map_inexact_read_bs_un(fastq_read_t *read,
      free(quality_clipping);
      array_list_free(tmp_mapping_list, (void *)NULL);
      array_list_free(mapping_list, (void *)NULL);
+     array_list_free(anchor_list, (void *)bwt_anchor_free);
 
      return array_list_size(mapping_list_tmp);
 }
