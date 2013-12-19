@@ -384,6 +384,7 @@ size_t bwt_map_exact_seeds_by_region(int start_position, int end_position,
 				     char *seq, int seed_size, int min_seed_size,
 				     bwt_optarg_t *bwt_optarg, bwt_index_t *index, 
 				     array_list_t *mapping_list);
+
 //-----------------------------------------------------------------------------
 // cal functions
 //-----------------------------------------------------------------------------
@@ -394,6 +395,9 @@ size_t bwt_generate_cals(char *seq, size_t seed_size, bwt_optarg_t *bwt_optarg,
 
 size_t bwt_generate_cals_bs(char *seq, char *seq2, size_t seed_size, bwt_optarg_t *bwt_optarg, 
 			    bwt_index_t *index, bwt_index_t *index2, array_list_t *cal_list);
+
+size_t bwt_generate_cals_bs_un(char *seq, char *seq2, size_t seed_size, bwt_optarg_t *bwt_optarg, 
+			       bwt_index_t *index, bwt_index_t *index2, array_list_t *cal_list);
 
 size_t bwt_generate_cals_between_coords(int strand_target, int chromosome_target,
 					size_t start_target, size_t end_target, 

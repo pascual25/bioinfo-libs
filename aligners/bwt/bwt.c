@@ -3269,9 +3269,11 @@ void insert_seeds_and_merge(array_list_t *mapping_list, linked_list_t ***cals_li
     int  chromosome_id = region->chromosome_id;
     int strand = region->strand;    
     //printf("Insert Region (%i)[%i:%lu|%i-%i|%lu]\n", region->strand, region->chromosome_id, 
-    // region->start, region->seq_start, region->seq_end, region->end);
+    //	   region->start, region->seq_start, region->seq_end, region->end);
+    LOG_DEBUG_F("Insert region %i (%lu)\n", m, array_list_size(mapping_list));
     my_cp_list_append_linked_list(cals_list[strand][chromosome_id], region, max_cal_distance, 1000);
 
+    LOG_DEBUG_F("Free region %i (%lu)\n", m, array_list_size(mapping_list));
     region_bwt_free(region);
   }
 }    
